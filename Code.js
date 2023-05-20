@@ -19,7 +19,7 @@ function doPost(e) {
 
 function doPostLogin(e) {
   const data = _getPostData(e);
-  const account = data["account"];
+  const account = parseInt(data["account"]);
   const password = data["password"];
 
   const valid = checkPassword(account, password);
@@ -38,7 +38,34 @@ function doPostLogin(e) {
  * @param {Number} account 
  */
 function pageAfterLogin(account) {
-  return _htmlWithData("LoginSuccess");
+  const stage = getCurrentStage();
+  if (stage === 1 && !isWilling(account)) {
+    const logoutURL = ScriptApp.getService().getUrl();
+    return _htmlWithData("no_willing", { logoutURL });
+  } else if (hasSelected(account, stage)) {
+    return ResultPage(account);
+  } else {
+    return SelectPage(account, stage);
+  }
+}
+
+/**
+ * Course select page.
+ * 
+ * @param {number} account 
+ * @param {number} stage 
+ */
+function SelectPage(account, stage) {
+  return _htmlWithData("Select");
+}
+
+/**
+ * Selection result page.
+ * 
+ * @param {number} account 
+ */
+function ResultPage(account) {
+  return _htmlWithData("Result");
 }
 
 /**

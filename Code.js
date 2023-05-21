@@ -18,6 +18,8 @@ function doPost(e) {
     return doPostSelect(e);
   } else if (postKind === POST_KIND.selectFail) {
     return doPostSelectFail(e);
+  } else if (postKind === POST_KIND.cancel) {
+    return doPostCancel(e);
   }
 }
 
@@ -67,6 +69,16 @@ function doPostSelectFail(e) {
   const data = _getPostData(e);
   const account = parseInt(data["account"]);
   return getPageByCurrentState(account);
+}
+
+function doPostCancel(e) {
+  const data = _getPostData(e);
+  const account = parseInt(data["account"]);
+
+  const stage = getCurrentStage();
+  cancelSelections(account, stage);
+
+  return SelectPage(account, stage);
 }
 
 /**

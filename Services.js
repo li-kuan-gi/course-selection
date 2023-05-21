@@ -164,6 +164,51 @@ function addAccountToCourses(account, courses, stage, spreadSheet) {
 }
 
 /**
+ * 
+ * @param {number} account 
+ * @param {number} stage 
+ */
+function cancelSelections(account, stage) {
+  const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
+  _cancelSelections(account, stage, spreadSheet);
+}
+
+/**
+ * 
+ * @param {number} account 
+ * @param {number} stage 
+ * @param {any} spreadSheet
+ */
+function _cancelSelections(account, stage, spreadSheet) {
+  const failSheet = spreadSheet.getSheetByName("fail");
+  const failRows = failSheet.getRange(2, 1, failSheet.getLastRow() - 1, failSheet.getLastColumn()).getValues();
+  const deletedCourses = [];
+  const newStageName = failRows.map(row => {
+    const studentAccount = parseInt(row[0]);
+    const course = parseInt(row[1]);
+    const selectionStage = _transformStageFromSheet(row[2]);
+
+    if (!(studentAccount === account && selectionStage === stage)) {
+      return [row[2]];
+    } else {
+      deletedCourses.push(course);
+      return [_transformStageToSheet(0)];
+    }
+  });
+  failSheet.getRange(2, failSheet.getLastColumn(), failSheet.getLastRow() - 1, 1).setValues(newStageName);
+
+  const courseSheet = spreadSheet.getSheetByName("course");
+  const courseRows = courseSheet.getRange(2, 1, courseSheet.getLastRow() - 1, courseSheet.getLastColumn()).getValues();
+  const newTotal = courseRows.map(row => {
+    const course = parseInt(row[0]);
+    const total = parseInt(row[5]);
+
+    return [deletedCourses.includes(course) ? total - 1 : total];
+  });
+  courseSheet.getRange(2, courseSheet.getLastColumn(), newTotal.length, 1).setValues(newTotal);
+}
+
+/**
  * Get all stage infos from sheet.
  * 
  * @returns {{stage: number, begin: Date, end: Date}[]}}
@@ -206,7 +251,7 @@ function _transformStageToSheet(stage) {
   } else if (stage === 2) {
     return StageNameInSheet.stage2;
   } else {
-    return " ";
+    return "";
   }
 }
 

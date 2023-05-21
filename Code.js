@@ -1,6 +1,6 @@
 function doGet(e) {
   const stage = getCurrentStage();
-  const loginURL = ScriptApp.getService().getUrl() + "?kind=login";
+  const loginURL = ScriptApp.getService().getUrl() + `?kind=${POST_KIND.login}`;
 
   if (stage === 0) {
     return _htmlWithData("wrong_time");
@@ -43,7 +43,7 @@ function pageAfterLogin(account) {
     const logoutURL = ScriptApp.getService().getUrl();
     return _htmlWithData("no_willing", { logoutURL });
   } else if (hasSelected(account, stage)) {
-    return ResultPage(account);
+    return ResultPage(account, stage);
   } else {
     return SelectPage(account, stage);
   }
@@ -56,16 +56,25 @@ function pageAfterLogin(account) {
  * @param {number} stage 
  */
 function SelectPage(account, stage) {
-  return _htmlWithData("Select");
+  const selectURL = ScriptApp.getService().getUrl() + `?kind=${POST_KIND.select}`;
+  const logoutURL = ScriptApp.getService().getUrl();
+  const states = JSON.stringify(getCourseStates(account, stage));
+
+  return _htmlWithData("Select", { account, states, stage, selectURL, logoutURL });
 }
 
 /**
  * Selection result page.
  * 
  * @param {number} account 
+ * @param {number} stage 
  */
-function ResultPage(account) {
-  return _htmlWithData("Result");
+function ResultPage(account, stage) {
+  const cancelURL = ScriptApp.getService().getUrl() + `?kind=${POST_KIND.cancel}`;
+  const logoutURL = ScriptApp.getService().getUrl();
+
+  const results = JSON.stringify(getResults(account));
+  return _htmlWithData("Result", { account, results, stage, cancelURL, logoutURL });
 }
 
 /**

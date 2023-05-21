@@ -24,18 +24,8 @@ function getCurrentStage() {
  * @return {Boolean}
  */
 function checkPassword(account, password) {
-  const rawData = _getStudentRawData();
-
-  const passwords = rawData.reduce((passwords, row) => {
-    const account = parseInt(row[0]);
-    const password = row[1];
-
-    passwords[account] = password;
-
-    return passwords;
-  }, {});
-
-  return password === passwords[account];
+  const correctPassword = getStudentInfos()[account].password;
+  return password === correctPassword;
 }
 
 /**
@@ -46,17 +36,7 @@ function checkPassword(account, password) {
  * @returns {boolean}
  */
 function isWilling(account) {
-  const rawData = _getStudentRawData();
-
-  const willings = rawData.reduce((willings, row) => {
-    const account = parseInt(row[0]);
-    const willing = row[2].trim();
-
-    willings[account] = !(willing === "");
-    return willings;
-  }, {});
-
-  return willings[account];
+  return getStudentInfos()[account].willing;
 }
 
 /**
@@ -68,11 +48,64 @@ function isWilling(account) {
  * @returns {boolean}
  */
 function hasSelected(account, stage) {
-  const rawData = _getFailRawData();
+  const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
+  const infos = getFailInfos(spreadSheet);
 
-  return rawData.some(row =>
-    (parseInt(row[0]) === account) && (_transformStageInSheet(row[2]) === stage)
+  return infos.some(info =>
+    (info.account === account) && (info.stage === stage)
   );
+}
+
+/**
+ * Get results of selection of the account.
+ * 
+ * @param {number} account
+ * 
+ * @returns {{id: number, name: string, credit: number, fee: number, stage: number}[]}
+ */
+function getResults(account) {
+  const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
+  const courseInfos = getCourseInfos(spreadSheet);
+  const failInfos = getFailInfos(spreadSheet);
+
+  return failInfos
+    .filter(info => (info.account === account) && (info.stage > 0))
+    .map(info => {
+      const id = info.classId;
+      const courseInfo = courseInfos[id];
+      const name = courseInfo.name;
+      const credit = courseInfo.credit;
+      const fee = courseInfo.fee;
+      const stage = info.stage;
+
+      return { id, name, credit, fee, stage };
+    });
+}
+
+/**
+ * Get states of courses for selection.
+ * 
+ * @param {number} account
+ * @param {number} stage - current stage
+ * 
+ * @returns {{id: number, name: string, credit: number, fee: number, hasBeenSelected: boolean, full: boolean}[]}
+ */
+function getCourseStates(account, stage) {
+  const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
+  const courseInfos = getCourseInfos(spreadSheet);
+  const failInfos = getFailInfos(spreadSheet);
+
+  const failedCourseInfos = failInfos.filter(info => info.account === account);
+  return failedCourseInfos.map(info => {
+    const id = info.classId;
+    const name = courseInfos[id].name;
+    const credit = courseInfos[id].credit;
+    const fee = courseInfos[id].fee;
+    const hasBeenSelected = (info.stage > 0) && (info.stage < stage);
+    const full = !(courseInfos[id].total < courseInfos[id].maximum);
+
+    return { id, name, credit, fee, hasBeenSelected, full };
+  });
 }
 
 /**
@@ -113,25 +146,64 @@ function _transformStageInSheet(stageName) {
 }
 
 /**
- * Return the student raw data, stored in google sheet (student sheet).
+ * Get infomation for each student.
  * 
- * @returns {string[][]}
+ * @returns {{[account: number]: {password: string, willing: boolean}}}
  */
-function _getStudentRawData() {
+function getStudentInfos() {
   const studentSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("student");
-  return studentSheet
+  const rawData = studentSheet
     .getRange(2, 1, studentSheet.getLastRow() - 1, studentSheet.getLastColumn())
     .getValues();
+
+  return rawData.reduce((infos, row) => {
+    const account = parseInt(row[0]);
+    const password = row[1].trim();
+    const willing = !(row[2].trim() === "");
+    infos[account] = { password, willing };
+
+    return infos;
+  }, {});
 }
 
 /**
  * Return raw data in "fail" sheet in google sheet.
  * 
- * @returns {string[][]}
+ * @returns {{account: number, classId: number, stage: number}[]}
  */
-function _getFailRawData() {
-  const failSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("fail");
-  return failSheet
+function getFailInfos(spreadSheet) {
+  const failSheet = spreadSheet.getSheetByName("fail");
+  const rawData = failSheet
     .getRange(2, 1, failSheet.getLastRow() - 1, failSheet.getLastColumn())
     .getValues();
+
+  return rawData.map(row => {
+    const account = parseInt(row[0]);
+    const classId = parseInt(row[1]);
+    const stage = _transformStageInSheet(row[2]);
+
+    return { account, classId, stage };
+  });
+}
+
+/**
+ * Get course infomations.
+ * 
+ * @returns {{[id: number]: {name: string, credit: number, fee: number, maximum: number, total: number}}}
+ */
+function getCourseInfos(spreadSheet) {
+  const courseSheet = spreadSheet.getSheetByName("course");
+  const rawData = courseSheet.getRange(2, 1, courseSheet.getLastRow() - 1, courseSheet.getLastColumn()).getValues();
+  return rawData.reduce((infos, row) => {
+    const id = parseInt(row[0]);
+    const name = row[1].trim();
+    const credit = parseInt(row[2]);
+    const fee = parseInt(row[3]);
+    const maximum = parseInt(row[4]);
+    const total = parseInt(row[5]);
+
+    infos[id] = { name, credit, fee, maximum, total };
+
+    return infos;
+  }, {});
 }

@@ -1,11 +1,12 @@
 function doGet(e) {
   const stage = getCurrentStage();
   const loginURL = ScriptApp.getService().getUrl() + `?kind=${POST_KIND.login}`;
+  const times = JSON.stringify(getTimes());
 
   if (stage === 0) {
     return _htmlWithData("wrong_time");
   } else {
-    return _htmlWithData("Login", { stage, loginURL });
+    return _htmlWithData("Login", { stage, loginURL, times });
   }
 }
 

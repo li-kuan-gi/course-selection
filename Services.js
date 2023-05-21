@@ -4,7 +4,6 @@
  * @return {Number}
  */
 function getCurrentStage() {
-
   const stageInfos = _getStageInfos();
 
   const info = stageInfos.find(info => {
@@ -13,6 +12,16 @@ function getCurrentStage() {
   });
 
   return info ? info.stage : 0;
+}
+
+function getTimes() {
+  const stageInfos = _getStageInfos();
+  const feeInfos = _getFeeInfos();
+
+  const stageTimes = stageInfos.map(info => [info.begin.toString(), info.end.toString()]).flat();
+  const feeTimes = feeInfos.map(info => [info.begin.toString(), info.end.toString()]).flat();
+
+  return [stageTimes, feeTimes];
 }
 
 /**
@@ -216,6 +225,21 @@ function _cancelSelections(account, stage, spreadSheet) {
 function _getStageInfos() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const stageSheet = ss.getSheetByName("stage");
+  const rawData = stageSheet
+    .getRange(2, 1, stageSheet.getLastRow() - 1, stageSheet.getLastColumn())
+    .getValues();
+  return rawData.map(row => {
+    const stage = _transformStageFromSheet(row[0]);
+    const begin = new Date(row[1]);
+    const end = new Date(row[2]);
+
+    return { stage, begin, end };
+  });
+}
+
+function _getFeeInfos() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const stageSheet = ss.getSheetByName("fee");
   const rawData = stageSheet
     .getRange(2, 1, stageSheet.getLastRow() - 1, stageSheet.getLastColumn())
     .getValues();

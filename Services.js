@@ -9,7 +9,7 @@ function getCurrentStage() {
 
   const info = stageInfos.find(info => {
     const current = new Date();
-    return info.begin < current && info.end;
+    return info.begin < current && current < info.end;
   });
 
   return info ? info.stage : 0;
@@ -24,8 +24,8 @@ function getCurrentStage() {
  * @return {Boolean}
  */
 function checkPassword(account, password) {
-  const correctPassword = getStudentInfos()[account].password;
-  return password === correctPassword;
+  const info = getStudentInfos()[account];
+  return info ? info.password === password : false;
 }
 
 /**
@@ -44,11 +44,11 @@ function isWilling(account) {
  * 
  * @param {number} account
  * @param {number} stage
+ * @param {any} spreadSheet
  * 
  * @returns {boolean}
  */
-function hasSelected(account, stage) {
-  const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
+function hasSelected(account, stage, spreadSheet) {
   const infos = getFailInfos(spreadSheet);
 
   return infos.some(info =>
@@ -109,6 +109,61 @@ function getCourseStates(account, stage) {
 }
 
 /**
+ * 
+ * @param {number} account 
+ * @param {number[]} courses 
+ * @param {number} stage 
+ */
+function selectCourses(account, courses, stage) {
+  const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
+  const courseInfos = getCourseInfos(spreadSheet);
+
+  const someFull = courses.some(course => courseInfos[course].total >= courseInfos[course].maximum);
+
+  if (hasSelected(account, stage, spreadSheet)) {
+    throw new HasSelectedError();
+  } else if (someFull) {
+    throw new SomeCourseFullError();
+  } else {
+    addAccountToCourses(account, courses, stage, spreadSheet);
+  }
+}
+
+/**
+ * 
+ * @param {number} account 
+ * @param {number[]} courses 
+ * @param {number} stage
+ * @param {any} spreadSheet 
+ */
+function addAccountToCourses(account, courses, stage, spreadSheet) {
+  const failSheet = spreadSheet.getSheetByName("fail");
+  const values = failSheet.getRange(2, 1, failSheet.getLastRow() - 1, failSheet.getLastColumn()).getValues();
+  const newStageNames = values.map(row => {
+    const studentAccount = parseInt(row[0]);
+    const course = parseInt(row[1]);
+    const selectionStage = _transformStageFromSheet(row[2]);
+
+    const newStageName = studentAccount === account && courses.includes(course) && selectionStage !== stage
+      ? _transformStageToSheet(stage)
+      : row[2];
+
+    return [newStageName];
+  });
+  failSheet.getRange(2, failSheet.getLastColumn(), failSheet.getLastRow() - 1, 1).setValues(newStageNames);
+
+  const courseSheet = spreadSheet.getSheetByName("course");
+  const rows = courseSheet.getRange(2, 1, courseSheet.getLastRow() - 1, courseSheet.getLastColumn()).getValues();
+  const newTotal = rows.map(row => {
+    const course = parseInt(row[0]);
+    const total = parseInt(row[5]);
+    const newTotal = courses.includes(course) ? total + 1 : total;
+    return [newTotal];
+  });
+  courseSheet.getRange(2, courseSheet.getLastColumn(), courseSheet.getLastRow() - 1, 1).setValues(newTotal);
+}
+
+/**
  * Get all stage infos from sheet.
  * 
  * @returns {{stage: number, begin: Date, end: Date}[]}}
@@ -120,7 +175,7 @@ function _getStageInfos() {
     .getRange(2, 1, stageSheet.getLastRow() - 1, stageSheet.getLastColumn())
     .getValues();
   return rawData.map(row => {
-    const stage = _transformStageInSheet(row[0]);
+    const stage = _transformStageFromSheet(row[0]);
     const begin = new Date(row[1]);
     const end = new Date(row[2]);
 
@@ -135,13 +190,23 @@ function _getStageInfos() {
  * 
  * @returns {number}
  */
-function _transformStageInSheet(stageName) {
+function _transformStageFromSheet(stageName) {
   if (stageName === StageNameInSheet.stage1) {
     return 1;
   } else if (stageName === StageNameInSheet.stage2) {
     return 2;
   } else {
     return 0;
+  }
+}
+
+function _transformStageToSheet(stage) {
+  if (stage === 1) {
+    return StageNameInSheet.stage1;
+  } else if (stage === 2) {
+    return StageNameInSheet.stage2;
+  } else {
+    return " ";
   }
 }
 
@@ -180,7 +245,7 @@ function getFailInfos(spreadSheet) {
   return rawData.map(row => {
     const account = parseInt(row[0]);
     const classId = parseInt(row[1]);
-    const stage = _transformStageInSheet(row[2]);
+    const stage = _transformStageFromSheet(row[2]);
 
     return { account, classId, stage };
   });

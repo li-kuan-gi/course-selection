@@ -14,6 +14,10 @@ function doPost(e) {
 
   if (postKind === POST_KIND.login) {
     return doPostLogin(e);
+  } else if (postKind === POST_KIND.select) {
+    return doPostSelect(e);
+  } else if (postKind === POST_KIND.selectFail) {
+    return doPostSelectFail(e);
   }
 }
 
@@ -25,11 +29,44 @@ function doPostLogin(e) {
   const valid = checkPassword(account, password);
 
   if (valid) {
-    return pageAfterLogin(account);
+    return getPageByCurrentState(account);
   } else {
     const returnURL = ScriptApp.getService().getUrl();
     return _htmlWithData("invalid_account", { returnURL });
   }
+}
+
+function doPostSelect(e) {
+  const data = _getPostData(e);
+  const account = parseInt(data["account"]);
+  const courses = Object.keys(data)
+    .filter(key => key !== "account")
+    .map(key => parseInt(key));
+
+  try {
+    const stage = getCurrentStage();
+    selectCourses(account, courses, stage);
+    return ResultPage(account, stage);
+  } catch (e) {
+    const returnURL = ScriptApp.getService().getUrl() + `?kind=${POST_KIND.selectFail}`;
+
+    let reason;
+    if (e instanceof HasSelectedError) {
+      reason = SelectionFailReasons.hasSelected;
+    } else if (e instanceof SomeCourseFullError) {
+      reason = SelectionFailReasons.full;
+    } else {
+      reason = e.toString();
+    }
+
+    return _htmlWithData("select_fail", { account, returnURL, reason });
+  }
+}
+
+function doPostSelectFail(e) {
+  const data = _getPostData(e);
+  const account = parseInt(data["account"]);
+  return getPageByCurrentState(account);
 }
 
 /**
@@ -37,15 +74,19 @@ function doPostLogin(e) {
  * 
  * @param {Number} account 
  */
-function pageAfterLogin(account) {
+function getPageByCurrentState(account) {
   const stage = getCurrentStage();
   if (stage === 1 && !isWilling(account)) {
     const logoutURL = ScriptApp.getService().getUrl();
     return _htmlWithData("no_willing", { logoutURL });
-  } else if (hasSelected(account, stage)) {
-    return ResultPage(account, stage);
   } else {
-    return SelectPage(account, stage);
+    const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
+
+    if (hasSelected(account, stage, spreadSheet)) {
+      return ResultPage(account, stage);
+    } else {
+      return SelectPage(account, stage);
+    }
   }
 }
 
@@ -80,7 +121,7 @@ function ResultPage(account, stage) {
 /**
  * Get post data from the request.
  * 
- * @returns {Object<string, any>}
+ * @returns {Object<string, string>}
  */
 function _getPostData(e) {
   const contents = e.postData.contents;

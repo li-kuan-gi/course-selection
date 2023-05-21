@@ -2,9 +2,11 @@
 
 //     login: account: String, password: String
     
-//     select: account: String, courses: String (like "cid1=??&cid2=??&...")
+//     select: "account=??&cid1=??&cid2=??&..."
 
 //     cancel: account: String
+
+//     selectfail: account: String
 
 
 // PAGE_DATA:  (Backend to Frontend)
@@ -34,6 +36,7 @@
 //     SelectFail:
 //         account: String
 //         returnURL: String
+//         reason: String
 
 //     NoWilling:
 //         logoutURL: String

@@ -41,3 +41,6 @@
 
 //     NoWilling:
 //         logoutURL: String
+
+//     Wrong Time Page:
+//         times: Array[Array[Array[String]]]

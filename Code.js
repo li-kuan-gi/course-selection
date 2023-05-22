@@ -4,7 +4,7 @@ function doGet(e) {
   const times = JSON.stringify(getTimes());
 
   if (stage === 0) {
-    return _htmlWithData("wrong_time");
+    return _htmlWithData("wrong_time", { times });
   } else {
     return _htmlWithData("Login", { stage, loginURL, times });
   }

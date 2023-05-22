@@ -18,8 +18,8 @@ function getTimes() {
   const stageInfos = _getStageInfos();
   const feeInfos = _getFeeInfos();
 
-  const stageTimes = stageInfos.map(info => [info.begin.toString(), info.end.toString()]).flat();
-  const feeTimes = feeInfos.map(info => [info.begin.toString(), info.end.toString()]).flat();
+  const stageTimes = stageInfos.map(info => [info.begin.toString(), info.end.toString()]);
+  const feeTimes = feeInfos.map(info => [info.begin.toString(), info.end.toString()]);
 
   return [stageTimes, feeTimes];
 }

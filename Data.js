@@ -14,7 +14,7 @@
 //     Login Page:
 //         stage: Number
 //         loginURL: String
-//         times: Array[Array[number]]
+//         times: Array[Array[Array[number]]]
 
 //     Result Page:
 //         account: String

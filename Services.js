@@ -160,16 +160,6 @@ function addAccountToCourses(account, courses, stage, spreadSheet) {
     return [newStageName];
   });
   failSheet.getRange(2, failSheet.getLastColumn(), failSheet.getLastRow() - 1, 1).setValues(newStageNames);
-
-  const courseSheet = spreadSheet.getSheetByName("course");
-  const rows = courseSheet.getRange(2, 1, courseSheet.getLastRow() - 1, courseSheet.getLastColumn()).getValues();
-  const newTotal = rows.map(row => {
-    const course = parseInt(row[0]);
-    const total = parseInt(row[5]);
-    const newTotal = courses.includes(course) ? total + 1 : total;
-    return [newTotal];
-  });
-  courseSheet.getRange(2, courseSheet.getLastColumn(), courseSheet.getLastRow() - 1, 1).setValues(newTotal);
 }
 
 /**
@@ -207,16 +197,6 @@ function _cancelSelections(account, stage, spreadSheet) {
     }
   });
   failSheet.getRange(2, failSheet.getLastColumn(), failSheet.getLastRow() - 1, 1).setValues(newStageName);
-
-  const courseSheet = spreadSheet.getSheetByName("course");
-  const courseRows = courseSheet.getRange(2, 1, courseSheet.getLastRow() - 1, courseSheet.getLastColumn()).getValues();
-  const newTotal = courseRows.map(row => {
-    const course = parseInt(row[0]);
-    const total = parseInt(row[5]);
-
-    return [deletedCourses.includes(course) ? total - 1 : total];
-  });
-  courseSheet.getRange(2, courseSheet.getLastColumn(), newTotal.length, 1).setValues(newTotal);
 }
 
 /**

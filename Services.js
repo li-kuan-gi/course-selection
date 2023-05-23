@@ -179,7 +179,9 @@ function addAccountToCourses(account, courses, stage, spreadSheet) {
  */
 function cancelSelections(account, stage) {
   const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
-  _cancelSelections(account, stage, spreadSheet);
+  if (hasSelected(account, stage, spreadSheet)) {
+    _cancelSelections(account, stage, spreadSheet);
+  }
 }
 
 /**

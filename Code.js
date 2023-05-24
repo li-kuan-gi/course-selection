@@ -93,9 +93,7 @@ function getPageByCurrentState(account) {
     const logoutURL = ScriptApp.getService().getUrl();
     return _htmlWithData("no_willing", { logoutURL });
   } else {
-    const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
-
-    if (hasSelected(account, stage, spreadSheet)) {
+    if (hasSelected(account, stage)) {
       return ResultPage(account, stage);
     } else {
       return SelectPage(account, stage);

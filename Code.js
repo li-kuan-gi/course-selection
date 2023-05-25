@@ -58,6 +58,8 @@ function doPostSelect(e) {
       reason = SelectionFailReasons.hasSelected;
     } else if (e instanceof SomeCourseFullError) {
       reason = SelectionFailReasons.full;
+    } else if (e instanceof TimeoutError) {
+      reason = SelectionFailReasons.timeout;
     } else {
       reason = e.toString();
     }

@@ -9,7 +9,8 @@ const POST_KIND = {
 
 const SelectionFailReasons = {
   hasSelected: "repeat",
-  full: "full"
+  full: "full",
+  timeout: "timeout"
 };
 
 const StageNameInSheet = {

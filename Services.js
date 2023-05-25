@@ -128,12 +128,12 @@ function selectCourses(account, courses, stage) {
     } else if (_isSomeFull(courses, spreadSheet)) {
       throw new SomeCourseFullError();
     } else {
-
       addAccountToCourses(account, courses, stage, spreadSheet);
-
     }
     SpreadsheetApp.flush();
     lock.releaseLock();
+  } else {
+    throw new TimeoutError();
   }
 }
 

@@ -118,14 +118,22 @@ function getCourseStates(account, stage) {
  * @param {number} stage 
  */
 function selectCourses(account, courses, stage) {
-  const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
+  const lock = LockService.getScriptLock();
+  const success = lock.tryLock(10000);
+  if (success) {
+    const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
 
-  if (_hasSelected(account, stage, spreadSheet)) {
-    throw new HasSelectedError();
-  } else if (_isSomeFull(courses, spreadSheet)) {
-    throw new SomeCourseFullError();
-  } else {
-    addAccountToCourses(account, courses, stage, spreadSheet);
+    if (_hasSelected(account, stage, spreadSheet)) {
+      throw new HasSelectedError();
+    } else if (_isSomeFull(courses, spreadSheet)) {
+      throw new SomeCourseFullError();
+    } else {
+
+      addAccountToCourses(account, courses, stage, spreadSheet);
+
+    }
+    SpreadsheetApp.flush();
+    lock.releaseLock();
   }
 }
 
@@ -138,6 +146,7 @@ function cancelSelections(account, stage) {
   const spreadSheet = SpreadsheetApp.openById(SHEET_ID);
   if (_hasSelected(account, stage, spreadSheet)) {
     removeAccountFromSelections(account, stage, spreadSheet);
+    SpreadsheetApp.flush();
   }
 }
 
